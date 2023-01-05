@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'dart:ui' as ui show Image;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ class FlipWidget extends StatefulWidget {
   final Size textureSize;
   final bool leftToRight;
   final double rollSize;
+  final FutureOr<ui.Image> Function()? textureImage;
 
   /// [child] is the widget you want to flip.
   /// [textureSize] is the pixel size of effect layer.
@@ -26,6 +28,7 @@ class FlipWidget extends StatefulWidget {
     this.textureSize = const Size(512, 512),
     this.leftToRight = false,
     this.rollSize = 12,
+    this.textureImage,
   }) : super(key: key);
 
   @override
@@ -132,9 +135,12 @@ class FlipWidgetState extends State<FlipWidget> {
     RenderObject? boundary = _renderKey.currentContext?.findRenderObject();
     if (boundary is RenderRepaintBoundary) {
       await _queueAction(() async {
-        var image = await boundary.toImage(
-          pixelRatio: MediaQuery.of(context).devicePixelRatio,
-        );
+        var textureImageFetcher = widget.textureImage;
+        var image = textureImageFetcher != null
+            ? await textureImageFetcher()
+            : await boundary.toImage(
+                pixelRatio: MediaQuery.of(context).devicePixelRatio,
+              );
         var buffer = await image.toByteData(format: ImageByteFormat.rawRgba);
         if (buffer != null) {
           var bytes = buffer.buffer
